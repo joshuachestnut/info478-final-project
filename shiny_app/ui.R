@@ -2,6 +2,7 @@ library("dplyr")
 library("ggplot2")
 library("shiny")
 library("rsconnect")
+library("leaflet")
 
 # 1. Allocation of money spent on food, how that relates to food insecurity?
 
