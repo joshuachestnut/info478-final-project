@@ -157,4 +157,49 @@ final_map <- leaflet() %>%
 final_map
 
 
-# 3. Trends of Food Insecurity based on different demogrpahics
+# 3. Trends of Food Insecurity based on different demographics
+tabPanel(
+  "Food Insecurity Trends",
+  titlePanel("Trends of Food Insecurity Over Time"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(
+        "chosen_race",
+        label = "Select The Ethnicity of Interest",
+        choices = list(
+          "White",
+          "Black",
+          "Hispanic",
+          "Other"
+        )
+      ),
+      checkboxGroupInput("home_types",
+                         "Please select home types:",
+                         c(
+                           "All Types" = "All Types", "With Children < 18" = "With Children < 18",
+                           "With Children < 18 & With Children < 6" = "With Children < 6", 
+                           "With Children < 18 & Married-couple families" = "Married-couple families",
+                           "With Children < 18 & Female head, no spouse" = "Female head, no spouse",
+                           "With Children < 18 & Male head, no spouse" = "Male head, no spouse",
+                           "With Children < 18 & Other household with child" = "Other household with child", 
+                           "With no children < 18 yrs" = "With no children < 18 yrs",
+                           "With no children < 18 yrs & More than one adult" = "More than one adult", 
+                           "With no children < 18 yrs & Women living alone" = "Women living alone",
+                           "With no children < 18 yrs & Men living alone" = "Men living alone",
+                           "With no children < 18 yrs & With elderly" = "With elderly",
+                           "With no children < 18 yrs & Elderly living alone" = "Elderly living alone"
+                         ),
+                         selected = "All Types"
+      ),
+      p("This tool is designed to show the trends of food insecurity in the US
+        from 2001 to 2017 for specific groups. Through these visualizations,
+        viewers will be able to see the differences between groups and
+        hopefully identify which groups need the most assistance.")
+      ),
+    mainPanel(
+      plotlyOutput("house_plot"),
+      br(),
+      plotlyOutput("race_plot")
+    )
+      )
+  )
