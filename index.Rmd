@@ -1,0 +1,17 @@
+---
+title: "Food Insecurity"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("analysis.R")
+```
+
+```{r food insecurity map, echo=FALSE}
+final_map
+```
+
+```{r plot, echo=FALSE}
+final_plot
+```
