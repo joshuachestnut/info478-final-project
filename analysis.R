@@ -8,6 +8,7 @@ library(scales)
 library(tidyr)
 library(ggplot2)
 library(plotly)
+library(shiny)
 
 # 1. Allocation of money spent on food, how that relates to food insecurity?
 state_data <- read.csv("./data/feed_america_data/prepped/state_data.csv")
@@ -34,12 +35,13 @@ plot <- ggplot(joined_data, aes(y=Food_Insecurity_Rate_2017, x=Money_Spent_on_Fo
   geom_smooth(method="loess", se=FALSE) +
   guides(colour=FALSE) +
   theme(legend.position = "none") +
-  ggtitle("Money Spent on Food Per Capita vs Food insecurity Rate For 51 States") +
+  ggtitle("Money Spent on Food Per Capita vs Food Insecurity Rate For 51 States") +
   xlab("Money Spent on Food Per Capita ") +
   ylab("Food Insecurity Rate (%)")
 
 
 final_plot <- ggplotly(plot, tooltip=c("x", "y", "text"))
+
 # 2. Map of Adult vs. Child Food Insecurity
 
 state_fi_data <- read.csv("data/feed_america_data/prepped/state_data_final.csv", stringsAsFactors = FALSE)
@@ -196,21 +198,6 @@ final_map <- leaflet() %>%
     group = "County Level"
   ) %>% 
   addCircles(
-    data = physical_inactive,
-    lng = ~long, lat = ~lat, 
-    weight = 1,
-    radius = ~physical_inactive$physical_inactivity_percentage*1000, 
-    popup = physical_inactive_popup, 
-    color = "black",
-    group = "Physical Inactivity",
-    highlightOptions = highlightOptions(
-      weight = 3,
-      color = "#666",
-      fillOpacity = 0.7,
-      bringToFront = TRUE
-    )
-  ) %>% 
-  addCircles(
     data = obesity,
     lng = ~long, lat = ~lat, 
     weight = 1,
@@ -267,108 +254,204 @@ final_map <- leaflet() %>%
             title = "State Level Food Insecurity Rate") %>% 
   addLayersControl(
     baseGroups = c("State Level", "County Level"),
-    overlayGroups = c("Physical Inactivity", "Obesity", "Hypertension", "Diabetes"),
+    overlayGroups = c("Obesity", "Hypertension", "Diabetes"),
     options = layersControlOptions(collapsed = FALSE)
   ) %>% 
-  hideGroup(c("Physical Inactivity", "Obesity", "Hypertension", "Diabetes"))
+  hideGroup(c("Obesity", "Hypertension", "Diabetes"))
 
-final_map
+# 3. Correlation Health Risk Plot
 
-# 3. Trends of Food Insecurity based on different demogrpahics
+setwd("..")
 
-library(shiny)
+health_risk <- read.csv("health_risk/health_risk.csv", stringsAsFactors = FALSE)
+
+health_risk <- health_risk %>%
+  mutate(
+    fi_rate = fi_rate*100
+  )
+
+colnames(health_risk)[colnames(health_risk) == "fi_rate"] <- "Food_Insecurity_Percentage"
+colnames(health_risk)[colnames(health_risk) == "diabetes_percent"] <- "Diabetes"
+colnames(health_risk)[colnames(health_risk) == "hypertension_percent"] <- "Hypertension"
+colnames(health_risk)[colnames(health_risk) == "obesity_percent"] <- "Obesity"
 
 my_ui <- fluidPage(
+
+  # Give the UI a Title
+  titlePanel("Correlation Between Food Insecurity and Health Risks"),
+
+  # Add a sidebarLayout
+  sidebarLayout(
+
+    # Add a sidebarPanel within the sidebarLayout
+    sidebarPanel(
+      # This is a radioButtons input for the feature choices.
+      radioButtons("Feature", "Select a Health Risk:", choices = c("Obesity", "Hypertension", "Diabetes"))
+    ),
+    # Add the mainPanel to the fluid page.
+    mainPanel(
+      plotlyOutput("correlationPlot")
+    )
+  ))
+
+
+my_server <- shinyServer(function(input, output) {
+  # This is the correlation plot that corresponds the the given selections and filters of the data table.
+  output$correlationPlot <- renderPlotly({
+    selected_data <- health_risk %>%
+      select(state, Food_Insecurity_Percentage, input$Feature)
+    health_risk_plot <- ggplot(data = health_risk) +
+      geom_point(mapping = aes_string(y = input$Feature, x = "Food_Insecurity_Percentage", text = "state"), color = "red") +
+      geom_smooth(mapping = aes_string(y = input$Feature, x = "Food_Insecurity_Percentage"), method = "lm") +
+      labs(
+        title = paste("Correlation between Food Insecurity and", input$Feature),
+        x = "Food Insecurity Percentage (%)",
+        y = paste(input$Feature, "Percent (%)")
+      )
+    # In order to produce the plot, need to call it at the end of the function.
+    health_risk_plot
+  })
+})
+
+# 4. Trends of Food Insecurity based on different demogrpahics
+
+my_ui_two <- fluidPage(
   titlePanel("Trends of Food Insecurity Over Time"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("chosen_race", label = "Select The Ethnicity of Interest", choices = list("White", "Black", "Hispanic", "Other")),
-      checkboxGroupInput("home_types", "Please select home types:",
-                         c(
-                           "All Types" = "All Types", "With Children < 18" = "With Children < 18",
-                           "With Children < 18 & With Children < 6" = "With Children < 6", 
-                           "With Children < 18 & Married-couple families" = "Married-couple families",
-                           "With Children < 18 & Female head, no spouse" = "Female head, no spouse",
-                           "With Children < 18 & Male head, no spouse" = "Male head, no spouse",
-                           "With Children < 18 & Other household with child" = "Other household with child", 
-                           "With no children < 18 yrs" = "With no children < 18 yrs",
-                           "With no children < 18 yrs & More than one adult" = "More than one adult", 
-                           "With no children < 18 yrs & Women living alone" = "Women living alone",
-                           "With no children < 18 yrs & Men living alone" = "Men living alone",
-                           "With no children < 18 yrs & With elderly" = "With elderly",
-                           "With no children < 18 yrs & Elderly living alone" = "Elderly living alone"
-                         ),
-                         selected = "All Types"
+      selectInput("chosen_race", label = "Select The Ethnicity of Interest",
+                  choices = list("White" = "White non-Hispanic",
+                                 "Black" = "Black non-Hispanic",
+                                 "Hispanic",
+                                 "Other")),
+      selectInput("home_types", label = "Please select household composition type:",
+                  choices = list(
+                    "All Households Combined" = "All Types", "With Children < 18" = "With children < 18 yrs",
+                    "With Children < 18 & With Children < 6 yrs" = "With children < 6 yrs", 
+                    "With Children < 18 & Married-couple Families" = "Married-couple families",
+                    "With Children < 18 & Female Head, No Spouse" = "Female head, no spouse",
+                    "With Children < 18 & Male Head, No Spouse" = "Male head, no spouse",
+                    "With Children < 18 & Other Household With Child" = "Other household with child", 
+                    "With No Children < 18 yrs" = "With no children < 18 yrs",
+                    "With No Children < 18 yrs & More Than One Adult" = "More than one adult", 
+                    "With No Children < 18 yrs & Women Living Alone" = "Women living alone",
+                    "With No Children < 18 yrs & Men Living Alone" = "Men living alone",
+                    "With Elderly" = "With elderly",
+                    "With Elderly & Elderly living alone" = "Elderly living alone"
+                  )
       ),
       p("This tool is designed to show the trends of food insecurity in the US
         from 2001 to 2017 for specific groups. Through these visualizations,
         viewers will be able to see the differences between groups and
-        hopefully identify which groups need the most assistance.")
+        hopefully identify which groups need the most assistance. The first 
+        plot focuses on a variety of ethnicities while the second focuses on the
+        different types of households in America. The overall food insecurity
+        trend of All Households shows a steady trend upwards from 2001 until 2003
+        and went downwards for 3 years. In 2007, there was a huge spike upwards
+        in food insecurity and hit its peak in 2012. From then on, there has
+        been a steady trend down but has yet to be at the levels seen in 2001.")
     ),
     mainPanel(
-      plotlyOutput("house_plot"),
+      plotlyOutput("race_plot"),
       br(),
-      plotlyOutput("race_plot")
+      plotOutput("house_plot")
     )
   )
 )
 
-trends_data <- read.csv("data/usda_data/prepped/food_security_data.csv",
+trends_data <- read.csv("usda_data/prepped/food_security_data.csv",
                         header = T,
                         stringsAsFactors = F)
 
-my_server <- shinyServer(function(input, output) {
-
-  output$house_plot <- renderPlotly({
-  if (input$home_types == "All Types") {
-    overall_data <- trends_data %>% filter(Category == "All households")
-    return(plot_ly(overall_data,
+my_server_two <- shinyServer(function(input, output) {
+  output$house_plot <- renderPlot({
+    p <- ggplot() + labs(x = "Year", y = "Food Insecurity %", 
+                         title = paste0("Food Insecurity % for Households ", input$home_types))
+    if(input$home_types == "All Types") {
+      overall_data <- trends_data %>% filter(Category == "All households")
+      p <- p + geom_line(data = overall_data, aes(x = Year, y = Food.insecure.Percent)) + 
+        labs(x = "Year", y = "Food Insecurity %", title = "Food Insecurity % for All Households Combined")
+    } 
+    if ("With children < 18 yrs" %in% input$home_types) {
+      first_data <- trends_data %>% filter(SubCategory == input$home_types)
+      first_data[is.na(first_data)] <- 0 
+      first_data <- first_data %>% filter(SubSubCategory == 0)
+      p <- p + geom_line(data = first_data, aes(x = Year, y = Food.insecure.Percent))
+    }
+    if ("With children < 6 yrs" %in% input$home_types) {
+      a_data <- trends_data %>% filter(SubSubCategory == "With children < 6 yrs")
+      p <- p + geom_line(data = a_data, aes(x = Year, y = Food.insecure.Percent)) + 
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Married-couple families" %in% input$home_types) {
+      b_data <- trends_data %>% filter(SubSubCategory == "Married-couple families")
+      p <- p + geom_line(data = b_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Female head, no spouse" %in% input$home_types) {
+      c_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = c_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Male head, no spouse" %in% input$home_types) {
+      d_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = d_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Other household with child" %in% input$home_types) {
+      e_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = e_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("With no children < 18 yrs" %in% input$home_types) {
+      second_data <- trends_data %>% filter(SubCategory == input$home_types)
+      second_data[is.na(second_data)] <- 0 
+      second_data <- second_data %>% filter(SubSubCategory == 0)
+      p <- p + geom_line(data = second_data, aes(x = Year, y = Food.insecure.Percent))
+    }
+    if ("More than one adult" %in% input$home_types) {
+      f_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = f_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With no children < 18 yrs & ", input$home_types))
+    }
+    if ("Women living alone" %in% input$home_types) {
+      g_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = g_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With no children < 18 yrs & ", input$home_types))
+    }
+    if ("Men living alone" %in% input$home_types) {
+      h_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = h_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With no children < 18 yrs & ", input$home_types))
+    }
+    if ("With elderly" %in% input$home_types) {
+      third_data <- trends_data %>% filter(SubCategory == input$home_types)
+      third_data[is.na(third_data)] <- 0 
+      third_data <- third_data %>% filter(SubSubCategory == 0)
+      p <- p + geom_line(data = third_data, aes(x = Year, y = Food.insecure.Percent))
+    }
+    if ("Elderly living alone" %in% input$home_types) {
+      j_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = j_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With Elderly & ", input$home_types))
+    }
+    return(p)
+  })
+  
+  output$race_plot <- renderPlotly({
+    other_data <- trends_data %>% filter(SubCategory == input$chosen_race) 
+    return(plot_ly(other_data,
                    x = ~Year,
                    y = ~Food.insecure.Percent,
                    type = "scatter",
                    mode = 'lines') %>%
-             layout(title = 'Food Insecurity For All Households',
+             layout(title = paste0("Food Insecurity For ", input$chosen_race, " Households"),
                     xaxis = list(title = "Year"),
                     yaxis = list (title = "Food Insecurity %")))
-  } 
-  if (input$home_types == "With children < 18 yrs"|
-      input$home_types == "With no children < 18 yrs" |
-      input$home_types == "With elderly") {
-    overall_data <- trends_data %>% filter(SubCategory == input$home_types)
-    return(plot_ly(overall_data,
-                   x = ~Year,
-                   y = ~Food.insecure.Percent,
-                   type = "scatter",
-                   mode = 'lines') %>%
-             layout(title = paste0("Food Insecurity For", input$home_types, "Households"),
-                    xaxis = list(title = "Year"),
-                    yaxis = list (title = "Food Insecurity %")))
-  } else {
-    new_data <- trends_data %>% filter(SubSubCategory == input$home_types)
-    return(plot_ly(new_data,
-                   x = ~Year,
-                   y = ~Food.insecure.Percent,
-                   type = "scatter",
-                   mode = 'lines') %>%
-             layout(title = paste0("Food Insecurity For", input$home_types, "Households"),
-                    xaxis = list(title = "Year"),
-                    yaxis = list (title = "Food Insecurity %")))
-  }
+  })
 })
 
-output$race_plot <- renderPlotly({
-  other_data <- trends_data %>% filter(SubCategory == input$chosen_race) 
-  return(plot_ly(overall_data,
-                 x = ~Year,
-                 y = ~Food.insecure.Percent,
-                 type = "scatter",
-                 mode = 'lines') %>%
-           layout(title = paste0("Food Insecurity For", input$chosen_race, "Households"),
-                  xaxis = list(title = "Year"),
-                  yaxis = list (title = "Food Insecurity %")))
-})
-}) 
 
-
+shinyApp(my_ui_two, my_server_two)
 
 

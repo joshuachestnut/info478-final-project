@@ -1,17 +1,324 @@
 ---
-title: "Food Insecurity"
-output: html_document
+title: "Food Insecurity Within The United States"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+    theme: cosmo
+runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(flexdashboard)
 source("analysis.R")
 ```
+
+Intro
+=====================================
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+### Authors
+
+
+__1. Joshua Chestnut__
+
+University of Washington
+
+jchest19@uw.edu
+
+__2. Feven Gurmu__
+
+University of Washington
+
+feveng8@uw.edu
+
+__3. Alex Kim__
+
+University of Washington
+
+ahk0517@uw.edu
+
+__4. Aditya Ramani__
+
+University of Washington
+
+adir84@uw.edu
+
+### Course
+
+__INFO 478:__ Population Health Informatics
+
+__Professor:__ Mike Freeman
+
+Row
+-----------------------------------------------------------------------
+
+### Food Insecure People in the United States
+
+```{r, echo=FALSE}
+fi_people <- "40,044,000"
+valueBox(fi_people, icon = "fa-users")
+```
+
+### Food Insecure Children in the United States
+
+```{r, echo=FALSE}
+fi_child <- "12,540,000"
+valueBox(fi_child, icon = "fa-users")
+```
+
+### Food Insecurity Rate in the United States
+
+```{r, echo=FALSE}
+rate <- 12.5
+gauge(rate, min = 0, max = 100, symbol = '%')
+```
+
+### Child Food Insecurity Rate in the United States 
+
+```{r, echo=FALSE}
+rate_child <- 17.0
+gauge(rate_child, min = 0, max = 100, symbol = '%')
+```
+
+### Average Meal Cost
+
+```{r, echo=FALSE}
+meal_cost <- "$3.02"
+valueBox(meal_cost, icon = "fa-money-bill-wave")
+```
+
+### Annual Food Budget Shortfall
+
+```{r, echo=FALSE}
+budget_short <- "$20,637,209,000"
+valueBox(budget_short, icon = "fa-dollar-sign")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Project Introduction
+
+Food insecurity is a major public health issue that can have detrimental effects on vulnerable populations. Food insecurity is the “limited or uncertain availability of nutritionally adequate or safe foods and the overall inability to afford enough food for an active, healthy life” [1]. According to the CDC food insecurity affects nearly 1 in 6 American households [2]. Individuals who are food insecure are at increased risk of diseases and various adverse health outcomes including obesity, type II diabetes, heart disease and hypertension.
+ 
+For our report, we decided to focus on four major themes: adult vs. child food insecurity trends, allocation of money, demographics and national participation in food service programs. In order to discover answers to our topics of interest we acquired data from Feeding America and Food Environment Atlas to explore variables of interest. Our first report examines the adult and children food insecurity trends on the national scale. The development of youth is also highly impacted by food insecurity. Lack of adequate nutritious foods can impair children’s both physical and mental development. Further, lack of adequate healthy foods can impair a child’s ability to concentrate and hinders their performance in in school [3]. Our second report examines which demographics are highly affected by food insecurity. Food insecurity has been identified as a contributing factor to poor health status and specific health outcomes which disproportionality impact low-income and minority households. Our third report looks into allocation of money spent on food and its relationship to food insecurity. Increased spending on food is associated with higher food quality and we wanted to examine to what extinct this relationship is true. Our last report focuses on national participation in food service programs. According to a study, among Americans impacted by food insecurity, a staggering 50 percent do not receive assistance [2]. We examined national participation in school breakfast programs, school lunch programs, summer food assistance programs and supplemental nutritional assistance programs.
+ 
+Despite data available regarding large-scale issues of food insecurity, nearly 42 million U.S. citizens are limited due to inability to access and afford essential nutrients. Of this population, vulnerable population are at substantially greater risk for food insecurity in addition to both long term and short-term health related consequences. We hope our report provides some insights on interesting variables regarding food insecurity in order for public health practitioners to scale up surveillance, and restructure food environments in order to optimally reduce disparities.
+
+Map
+===================================== 
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+### Description
+
+Map Description
+
+Row
+-----------------------------------------------------------------------
+
+### Map Visual
 
 ```{r food insecurity map, echo=FALSE}
 final_map
 ```
 
+Health Risk
+===================================== 
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+fluidPage(
+  selectInput("Feature",label = h3("Select a Health Risk:"), choices = c("Obesity", "Hypertension", "Diabetes"))
+)
+```
+
+### Description
+
+Demonstrates the Correlation between food insecurity and health risks
+
+Row
+-----------------------------------------------------------------------
+
+### Health Risk Plot
+
+```{r}
+renderPlotly({
+    selected_data <- health_risk %>%
+      select(state, Food_Insecurity_Percentage, input$Feature)
+    health_risk_plot <- ggplot(data = health_risk) +
+      geom_point(mapping = aes_string(y = input$Feature, x = "Food_Insecurity_Percentage", text = "state"), color = "red") +
+      geom_smooth(mapping = aes_string(y = input$Feature, x = "Food_Insecurity_Percentage"), method = "lm") +
+      labs(
+        title = paste("Correlation Between Food Insecurity and", input$Feature),
+        x = "Food Insecurity Percentage (%)",
+        y = paste(input$Feature, "Percent (%)")
+      ) 
+    # In order to produce the plot, need to call it at the end of the function.
+    health_risk_plot
+  })
+```
+
+Expenditure
+===================================== 
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+### Description
+
+This graph maps out the relationship between food insecurity and the amount of money each person spends on food in a year. The general trend of the graph starts off with an overall downward trend – the more money that is spent, a lower percentage of people in a given state have food insecurity. But this trend halts around the $3000 to $3250 mark. This is a very interesting part of the graph – it shows that in states where people spend more than around $3.2k, the percentage of people who suffer from food insecurity stays about the same.
+
+Row
+-----------------------------------------------------------------------
+
+### Money Spent on Food Per Capita vs Food Insecurity Rate For 51 States Plot
+
 ```{r plot, echo=FALSE}
 final_plot
 ```
+
+Demographics
+===================================== 
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectInput("chosen_race", label = h3("Select The Ethnicity of Interest"),
+                  choices = list("White" = "White non-Hispanic",
+                                 "Black" = "Black non-Hispanic",
+                                 "Hispanic",
+                                 "Other"))
+selectInput("home_types", label = h3("Please select household composition type:"),
+                  choices = list(
+                    "All Households Combined" = "All Types", "With Children < 18" = "With children < 18 yrs",
+                    "With Children < 18 & With Children < 6 yrs" = "With children < 6 yrs", 
+                    "With Children < 18 & Married-couple Families" = "Married-couple families",
+                    "With Children < 18 & Female Head, No Spouse" = "Female head, no spouse",
+                    "With Children < 18 & Male Head, No Spouse" = "Male head, no spouse",
+                    "With Children < 18 & Other Household With Child" = "Other household with child", 
+                    "With No Children < 18 yrs" = "With no children < 18 yrs",
+                    "With No Children < 18 yrs & More Than One Adult" = "More than one adult", 
+                    "With No Children < 18 yrs & Women Living Alone" = "Women living alone",
+                    "With No Children < 18 yrs & Men Living Alone" = "Men living alone",
+                    "With Elderly" = "With elderly",
+                    "With Elderly & Elderly living alone" = "Elderly living alone"
+                  ))
+
+```
+
+### Description
+
+This tool is designed to show the trends of food insecurity in the US from 2001 to 2017 for specific groups. Through these visualizations, viewers will be able to see the differences between groups and hopefully identify which groups need the most assistance. The first plot focuses on a variety of ethnicities while the second focuses on the different types of households in America. The overall food insecurity trend of All Households shows a steady trend upwards from 2001 until 2003 and went downwards for 3 years. In 2007, there was a huge spike upwards in food insecurity and hit its peak in 2012. From then on, there has been a steady trend down but has yet to be at the levels seen in 2001.
+
+Row
+-----------------------------------------------------------------------
+
+### Food Insecurity by Ethnicity Plot
+
+```{r}
+renderPlotly({
+    other_data <- trends_data %>% filter(SubCategory == input$chosen_race) 
+    return(plot_ly(other_data,
+                   x = ~Year,
+                   y = ~Food.insecure.Percent,
+                   type = "scatter",
+                   mode = 'lines') %>%
+             layout(title = paste0("Food Insecurity For ", input$chosen_race, " Households"),
+                    xaxis = list(title = "Year"),
+                    yaxis = list (title = "Food Insecurity %")))
+  })
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Food Insecurity by Household Demographic Plot
+
+```{r}
+renderPlot({
+    p <- ggplot() + labs(x = "Year", y = "Food Insecurity %", 
+                         title = paste0("Food Insecurity % for Households ", input$home_types))
+    if(input$home_types == "All Types") {
+      overall_data <- trends_data %>% filter(Category == "All households")
+      p <- p + geom_line(data = overall_data, aes(x = Year, y = Food.insecure.Percent)) + 
+        labs(x = "Year", y = "Food Insecurity %", title = "Food Insecurity % for All Households Combined")
+    } 
+    if ("With children < 18 yrs" %in% input$home_types) {
+      first_data <- trends_data %>% filter(SubCategory == input$home_types)
+      first_data[is.na(first_data)] <- 0 
+      first_data <- first_data %>% filter(SubSubCategory == 0)
+      p <- p + geom_line(data = first_data, aes(x = Year, y = Food.insecure.Percent))
+    }
+    if ("With children < 6 yrs" %in% input$home_types) {
+      a_data <- trends_data %>% filter(SubSubCategory == "With children < 6 yrs")
+      p <- p + geom_line(data = a_data, aes(x = Year, y = Food.insecure.Percent)) + 
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Married-couple families" %in% input$home_types) {
+      b_data <- trends_data %>% filter(SubSubCategory == "Married-couple families")
+      p <- p + geom_line(data = b_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Female head, no spouse" %in% input$home_types) {
+      c_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = c_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Male head, no spouse" %in% input$home_types) {
+      d_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = d_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("Other household with child" %in% input$home_types) {
+      e_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = e_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With children < 18 yrs & ", input$home_types))
+    }
+    if ("With no children < 18 yrs" %in% input$home_types) {
+      second_data <- trends_data %>% filter(SubCategory == input$home_types)
+      second_data[is.na(second_data)] <- 0 
+      second_data <- second_data %>% filter(SubSubCategory == 0)
+      p <- p + geom_line(data = second_data, aes(x = Year, y = Food.insecure.Percent))
+    }
+    if ("More than one adult" %in% input$home_types) {
+      f_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = f_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With no children < 18 yrs & ", input$home_types))
+    }
+    if ("Women living alone" %in% input$home_types) {
+      g_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = g_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With no children < 18 yrs & ", input$home_types))
+    }
+    if ("Men living alone" %in% input$home_types) {
+      h_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = h_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With no children < 18 yrs & ", input$home_types))
+    }
+    if ("With elderly" %in% input$home_types) {
+      third_data <- trends_data %>% filter(SubCategory == input$home_types)
+      third_data[is.na(third_data)] <- 0 
+      third_data <- third_data %>% filter(SubSubCategory == 0)
+      p <- p + geom_line(data = third_data, aes(x = Year, y = Food.insecure.Percent))
+    }
+    if ("Elderly living alone" %in% input$home_types) {
+      j_data <- trends_data %>% filter(SubSubCategory == input$home_types)
+      p <- p + geom_line(data = j_data, aes(x = Year, y = Food.insecure.Percent)) +
+        labs(title = paste0("Food Insecurity % for Households With Elderly & ", input$home_types))
+    }
+    return(p)
+  })
+```
+
+References
+===================================== 
