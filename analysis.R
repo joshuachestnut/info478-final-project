@@ -9,11 +9,13 @@ library(tidyr)
 library(ggplot2)
 library(plotly)
 library(shiny)
+library(highcharter)
+library(treemap)
 
 # 1. Allocation of money spent on food, how that relates to food insecurity?
-state_data <- read.csv("./data/feed_america_data/prepped/state_data.csv")
+state_data <- read.csv("data/feed_america_data/prepped/state_data.csv")
 
-pce_data <- read.csv("./data/pce_data/pce1018.csv") %>%
+pce_data <- read.csv("data/pce_data/pce1018.csv") %>%
   select(State, Total.Personal.Consumption.Expenditures, 
          Housing.and.utilities,
          Off.premises.food.and.beverages) %>% head(51)
@@ -65,13 +67,9 @@ state_fi_data$GEOID[5] <- "06"
 state_fi_data$GEOID[6] <- "08"
 state_fi_data$GEOID[7] <- "09"
 
+us.map <- readOGR(dsn = "data/feed_america_data/cb_2018_us_county_500k", layer = "cb_2018_us_county_500k", stringsAsFactors = FALSE)
 
-setwd("data/feed_america_data/cb_2018_us_county_500k")
-
-us.map <- readOGR(dsn = ".", layer = "cb_2018_us_county_500k", stringsAsFactors = FALSE)
-
-setwd("../cb_2018_us_state_500k")
-us.state.map <- readOGR(dsn = ".", layer = "cb_2018_us_state_500k", stringsAsFactors = FALSE)
+us.state.map <- readOGR(dsn = "data/feed_america_data/cb_2018_us_state_500k", layer = "cb_2018_us_state_500k", stringsAsFactors = FALSE)
 
 us.map <- us.map[!us.map$STATEFP %in% c("72", "66", "78", "60", "69",
                                         "64", "68", "70", "74"),]
@@ -123,12 +121,10 @@ state_bins <-c(0, .02, .04, .06, .08, .10, .12, .14, .16, .18, .20)
 pal <- colorBin("YlOrRd", domain = leafmap$fi_rate, bins = bins)
 pal_state <- colorBin("YlOrRd", domain = leafmap_state$fi_rate, bins = state_bins)
 
-setwd("../../Health_Data")
-
-physical_inactive <- read.csv("physical_inactivity_prevalence.csv", stringsAsFactors = FALSE)
-obesity <- read.csv("obesity_prevalence.csv", stringsAsFactors = FALSE)
-diabetes <- read.csv("diabetes_prevalence.csv", stringsAsFactors = FALSE)
-hypertension <- read.csv("hypertension_prevalence.csv", stringsAsFactors = FALSE)
+physical_inactive <- read.csv("data/Health_Data/physical_inactivity_prevalence.csv", stringsAsFactors = FALSE)
+obesity <- read.csv("data/Health_Data/obesity_prevalence.csv", stringsAsFactors = FALSE)
+diabetes <- read.csv("data/Health_Data/diabetes_prevalence.csv", stringsAsFactors = FALSE)
+hypertension <- read.csv("data/Health_Data/hypertension_prevalence.csv", stringsAsFactors = FALSE)
 
 obesity_popup <- paste0("<strong>State: </strong>", 
                         obesity$state, 
@@ -261,9 +257,7 @@ final_map <- leaflet() %>%
 
 # 3. Correlation Health Risk Plot
 
-setwd("..")
-
-health_risk <- read.csv("health_risk/health_risk.csv", stringsAsFactors = FALSE)
+health_risk <- read.csv("data/health_risk/health_risk.csv", stringsAsFactors = FALSE)
 
 health_risk <- health_risk %>%
   mutate(
@@ -359,7 +353,7 @@ my_ui_two <- fluidPage(
   )
 )
 
-trends_data <- read.csv("usda_data/prepped/food_security_data.csv",
+trends_data <- read.csv("data/usda_data/prepped/food_security_data.csv",
                         header = T,
                         stringsAsFactors = F)
 
@@ -451,7 +445,34 @@ my_server_two <- shinyServer(function(input, output) {
   })
 })
 
+# 5. Bar Shiny
 
-shinyApp(my_ui_two, my_server_two)
+food_data <- read.csv("data/food_programs_data/food_data.csv", stringsAsFactors = F)
 
+food_data <- food_data %>% 
+  select(State, County, PCT_SNAP16,PCT_NSLP15,PCT_SBP15, PCT_SFSP15)
+
+food_data <- food_data %>% 
+  group_by(State) %>% 
+  summarise(
+    `SNAP Coverage` = median(PCT_SNAP16),
+    `School Lunch Participants` = median(PCT_NSLP15),
+    `School Breakfast Participants` = median(PCT_SBP15),
+    `Summer Food Service Program Participants` = median(PCT_SFSP15)
+  )
+
+us_states <- read.csv("data/food_programs_data/us_states.csv", stringsAsFactors = FALSE)
+
+food_data_states <- left_join(us_states, food_data, by = "State")
+
+food_data_states <- food_data_states %>% 
+  select(-State)
+
+
+food_data_states <- add_row(food_data_states, state = "Nation", `SNAP Coverage` = 13.52769, `School Lunch Participants` = 9.000934, `School Breakfast Participants` = 3.87997, `Summer Food Service Program Participants` = 0.787438)
+
+food_data_states <- food_data_states[c(52,1:51),]
+
+food_data_states <- food_data_states %>% 
+  gather(key="program", value = "percent", -state)
 

@@ -5,11 +5,23 @@ output:
     orientation: rows
     social: menu
     source_code: embed
-    theme: cosmo
 runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
+library(sp)
+library(rgeos)
+library(rgdal)
+library(maptools)
+library(dplyr)
+library(leaflet)
+library(scales)
+library(tidyr)
+library(ggplot2)
+library(plotly)
+library(shiny)
+library(highcharter)
+library(treemap)
 library(knitr)
 library(flexdashboard)
 source("analysis.R")
@@ -104,11 +116,11 @@ Row
 
 ### Project Introduction
 
-Food insecurity is a major public health issue that can have detrimental effects on vulnerable populations. Food insecurity is the “limited or uncertain availability of nutritionally adequate or safe foods and the overall inability to afford enough food for an active, healthy life” [1]. According to the CDC food insecurity affects nearly 1 in 6 American households [2]. Individuals who are food insecure are at increased risk of diseases and various adverse health outcomes including obesity, type II diabetes, heart disease and hypertension.
- 
-For our report, we decided to focus on four major themes: adult vs. child food insecurity trends, allocation of money, demographics and national participation in food service programs. In order to discover answers to our topics of interest we acquired data from Feeding America and Food Environment Atlas to explore variables of interest. Our first report examines the adult and children food insecurity trends on the national scale. The development of youth is also highly impacted by food insecurity. Lack of adequate nutritious foods can impair children’s both physical and mental development. Further, lack of adequate healthy foods can impair a child’s ability to concentrate and hinders their performance in in school [3]. Our second report examines which demographics are highly affected by food insecurity. Food insecurity has been identified as a contributing factor to poor health status and specific health outcomes which disproportionality impact low-income and minority households. Our third report looks into allocation of money spent on food and its relationship to food insecurity. Increased spending on food is associated with higher food quality and we wanted to examine to what extinct this relationship is true. Our last report focuses on national participation in food service programs. According to a study, among Americans impacted by food insecurity, a staggering 50 percent do not receive assistance [2]. We examined national participation in school breakfast programs, school lunch programs, summer food assistance programs and supplemental nutritional assistance programs.
- 
-Despite data available regarding large-scale issues of food insecurity, nearly 42 million U.S. citizens are limited due to inability to access and afford essential nutrients. Of this population, vulnerable population are at substantially greater risk for food insecurity in addition to both long term and short-term health related consequences. We hope our report provides some insights on interesting variables regarding food insecurity in order for public health practitioners to scale up surveillance, and restructure food environments in order to optimally reduce disparities.
+Food insecurity is a major public health issue that can have detrimental effects on vulnerable populations. Food insecurity is the “limited or uncertain availability of nutritionally adequate or safe foods and the overall inability to afford enough food for an active, healthy life” [1]. According to the CDC, food insecurity affects nearly 1 in 6 American households [2]. Individuals who are food insecure are at increased risk of diseases and various adverse health outcomes including obesity, type II diabetes, heart disease, and hypertension.
+
+For our report, we decided to focus on four major themes: adult vs. child food insecurity trends, allocation of money, demographics and national participation in food service programs. In order to discover answers to our topics of interest, we acquired data from Feeding America and Food Environment Atlas to explore variables of interest. Our first report examines the adult and children food insecurity trends on the national scale. The development of youth is also highly impacted by food insecurity. Lack of adequate nutritious foods can impair children’s both physical and mental development. Further, the lack of adequate healthy foods can impair a child’s ability to concentrate and hinders their performance in school [3]. Our second report examines which demographics are highly affected by food insecurity. Food insecurity has been identified as a contributing factor to poor health status and specific health outcomes which disproportionality impact low-income and minority households. Our third report looks into the allocation of money spent on food and its relationship to food insecurity. Increased spending on food is associated with higher food quality and we wanted to examine to what extinct this relationship is true. Our last report focuses on national participation in food service programs. According to a study, among Americans impacted by food insecurity, a staggering 50 percent do not receive assistance [2]. We examined national participation in school breakfast programs, school lunch programs, summer food assistance programs, and supplemental nutrition assistance programs.
+
+Despite data available regarding large-scale issues of food insecurity, nearly 42 million U.S. citizens are limited due to the inability to access and afford essential nutrients. Of this population, the vulnerable population is at substantially greater risk for food insecurity in addition to both long term and short-term health-related consequences. We hope our report provides some insights on interesting variables regarding food insecurity in order for public health practitioners to scale up surveillance, and restructure food environments in order to optimally reduce disparities.
 
 Map
 ===================================== 
@@ -118,7 +130,13 @@ Inputs {.sidebar}
 
 ### Description
 
-Map Description
+Chloropleth maps utilize different shading and coloring in order to display particular values or percentages within certain areas, or regions.
+
+This choropleth map, in particular, displays the rates of overall food insecurity within the United States. Additionally, it presents data at both the state and county level. 
+
+Furthermore, by clicking on any state or county, a pop-up will appear. The pop-up contains data for the overall food insecurity percentage, the overall number of food insecure people, the child food insecurity percentage, the number of food insecure children, the cost per meal, and the weighted annual food budget shortfall for the given region. 
+
+Lastly, indicated by the checklist on the side, the user is able to click on the particular health risks associated with food insecurity, and see the prevalence within each state. The larger the circle, the greater the percentage of the state population that has that particular health risk. 
 
 Row
 -----------------------------------------------------------------------
@@ -143,7 +161,25 @@ fluidPage(
 
 ### Description
 
-Demonstrates the Correlation between food insecurity and health risks
+It is believed that food insecurity makes populations susceptible to developing certain health risks, such as obesity, diabetes, and hypertension.
+
+In order to evaluate this idea, we felt that it would be interesting to examine the correlation between food insecurity and these three health risks. 
+
+As evident from the models, there is a distinct positive correlation between food insecurity and obesity, diabetes, and hypertension
+
+Correlations:
+
+Food Insecurity and Obesity: 0.622361
+
+Food Insecurity and Diabetes: 0.7708581
+
+Food Insecurity and Hypertension: 0.7010749
+
+-Obesity represents the prevalence among US adults (20+)
+
+-Diabetes represents the prevalence among US adults (18+)
+
+-Hypertension represents the prevalence among US adults (18+)
 
 Row
 -----------------------------------------------------------------------
@@ -320,5 +356,55 @@ renderPlot({
   })
 ```
 
-References
+Programs
 ===================================== 
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectInput("States",label = h3("Select a State:"), choices = food_data_states$state, selected = TRUE)
+```
+
+### Description
+
+When examining national participation in various food service programs, summer food service program had the fewest participants and highest percentage participants were those receiving SNAP coverage. The most intriguing finding from this data is lack of participation in the summer food service programs. While this programs occurs a shorter duration throughout the year, I am curious why there is low participation. Most children do not attend school in the summer, which could suggest many are missing out on essential meals that they normally receive through school. It was also interesting that the percentage of breakfast and lunch program participants were not similar. There is a significantly less people participating in  the breakfast program in comparison to lunch program participants. Lastly, there was high participation in the supplemental nutrition assistance across most states. However, there was lots of variability across states. For example, it was interesting that over 22% of New Mexico’s citizens participate in SNAP and a little over 5% in Wyoming. 
+
+Row
+-----------------------------------------------------------------------
+
+### Food Programs by State
+
+```{r}
+renderPlotly({
+    filtered_data <- food_data_states %>%
+      filter(state == input$States)
+    program_plot <- ggplot(data = filtered_data, aes(x=program, y=percent)) +
+      geom_bar(stat="identity", width=.5, fill="tomato3") +
+      labs(
+        title = paste("Food Program Participation in", input$States),
+        x = "Food Programs",
+        y = "Participation Percent (%)"
+      ) +
+      coord_flip() +
+      theme(axis.title.y = element_text(vjust=100))
+    program_plot
+  })
+```
+
+References
+=====================================
+
+### Works Cited
+
+1. American Academy of Pediatrics. (2014). Adverse Childhood Experiences and the Lifelong Consequences of Trauma.
+https://www.aap.org/en-us/Documents/ttb_aces_consequences. Pdf.
+2. Consumer Spending. US Bureau of Economic Analysis
+https://www.bea.gov/data/consumer-spending/main Accessed June 3, 2019
+3. Cook, John. Jeng, Karen. Child food insecurity: the economic impact on our nation. A report on research on the impact of food
+insecurity and hunger on child health, growth and development commissioned by Feeding America and The ConAgra Food Foundation. 2009.
+4. “Data Trends &amp; Maps | DHDSP | CDC.” Centers for Disease Control and Prevention, Centers for Disease Control and Prevention, www.cdc.gov/dhdsp/maps/dtm/index.html.
+5. Food & Nutrition Assistance. USDA ERS - Food Security in the U.S. https://www.ers.usda.gov/topics/food-nutrition-assistance/food-security-in-the-us/. Accessed June 3, 2019.
+6. Food Environment Atlas. USDA ERS - Food Environment Atlas. https://www.ers.usda.gov/data-products/food-environment-atlas/. Accessed June 5, 2019.
+7. Gundersen, C., A. Dewey, M. Kato, , A. Crumbaugh & M. Strayer. Map the Meal Gap 2019: A Report on County and Congressional District Food Insecurity and County Food Cost in the United States in 2017. Feeding America, 2019. 
+8. Who Is Food Insecure? Implications for Targeted Recruitment and Outreach, National Health and Nutrition Examination Survey, 2005–2010. Centers for Disease Control and Prevention. https://www.cdc.gov/pcd/issues/2016/16_0103.htm. Accessed June 3, 2019.
