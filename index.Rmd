@@ -128,6 +128,10 @@ Map
 Inputs {.sidebar}
 -----------------------------------------------------------------------
 
+### Question
+
+How does Food Insecurity vary across the United States?
+
 ### Description
 
 Chloropleth maps utilize different shading and coloring in order to display particular values or percentages within certain areas, or regions.
@@ -158,6 +162,10 @@ fluidPage(
   selectInput("Feature",label = h3("Select a Health Risk:"), choices = c("Obesity", "Hypertension", "Diabetes"))
 )
 ```
+
+### Question
+
+How are different Health Risks assoctiated with Food Insecurity?
 
 ### Description
 
@@ -209,6 +217,10 @@ Expenditure
 Inputs {.sidebar}
 -----------------------------------------------------------------------
 
+### Question
+
+How does expenditure on food per capita effect food insecurity rates?
+
 ### Description
 
 This graph maps out the relationship between food insecurity and the amount of money each person spends on food in a year. The general trend of the graph starts off with an overall downward trend – the more money that is spent, a lower percentage of people in a given state have food insecurity. But this trend halts around the $3000 to $3250 mark. This is a very interesting part of the graph – it shows that in states where people spend more than around $3.2k, the percentage of people who suffer from food insecurity stays about the same.
@@ -251,6 +263,10 @@ selectInput("home_types", label = h3("Please select household composition type:"
                   ))
 
 ```
+
+### Question
+
+How do Food Insecurity rates vary across demographics and time?
 
 ### Description
 
@@ -366,9 +382,13 @@ Inputs {.sidebar}
 selectInput("States",label = h3("Select a State:"), choices = food_data_states$state, selected = TRUE)
 ```
 
+### Question
+
+What are the participation rates in various food service programs?
+
 ### Description
 
-When examining national participation in various food service programs, summer food service program had the fewest participants and highest percentage participants were those receiving SNAP coverage. The most intriguing finding from this data is lack of participation in the summer food service programs. While this programs occurs a shorter duration throughout the year, I am curious why there is low participation. Most children do not attend school in the summer, which could suggest many are missing out on essential meals that they normally receive through school. It was also interesting that the percentage of breakfast and lunch program participants were not similar. There is a significantly less people participating in  the breakfast program in comparison to lunch program participants. Lastly, there was high participation in the supplemental nutrition assistance across most states. However, there was lots of variability across states. For example, it was interesting that over 22% of New Mexico’s citizens participate in SNAP and a little over 5% in Wyoming. 
+When examining national participation in various food service programs, summer food service program had the fewest participants and highest percentage participants were those receiving SNAP coverage. The most intriguing finding from this data is the lack of participation in the summer food service programs. While these programs occur in a shorter duration throughout the year, I am curious why there is low participation. Most children do not attend school in the summer, which could suggest many are missing out on essential meals that they normally receive through school. It was also interesting that the percentage of breakfast and lunch program participants were not similar. There are significantly fewer people participating in the breakfast program in comparison to lunch program participants. Lastly, there was high participation in the supplemental nutrition assistance across most states. However, there was lots of variability across states. For example, it was interesting that over 22% of New Mexico’s citizens participate in SNAP and a little over 5% in Wyoming. 
 
 Row
 -----------------------------------------------------------------------
